@@ -173,11 +173,11 @@ class MarkdownReportRenderer:
         Args:
             html_link_base: The path to the dir that HTML reports are written into, if using HTML
               links. If not provided, no HTML links will be generated in the summary report.
-            relative_to: The path that HTML report links should be relative to.
+            relative_to: The path that HTML report links should be relative to. Defaults to html_link_base.
 
         """
         self.html_link_base = html_link_base
-        self.relative_to = relative_to
+        self.relative_to = relative_to if relative_to is not None else html_link_base
 
     def render(
         self,
