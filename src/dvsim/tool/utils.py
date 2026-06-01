@@ -7,6 +7,7 @@
 from dvsim.logging import log
 from dvsim.sim.tool.base import SimTool
 from dvsim.sim.tool.vcs import VCS
+from dvsim.sim.tool.verilator import Verilator
 from dvsim.sim.tool.xcelium import Xcelium
 from dvsim.sim.tool.z01x import Z01X
 
@@ -16,6 +17,7 @@ _SUPPORTED_SIM_TOOLS = {
     "vcs": VCS,
     "xcelium": Xcelium,
     "z01x": Z01X,
+    "verilator": Verilator,
 }
 
 
