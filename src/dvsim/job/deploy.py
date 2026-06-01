@@ -516,7 +516,9 @@ class CompileSim(Deploy):
             """Perform pre-launch tasks."""
             # Delete old coverage database directories before building again. We
             # need to do this because the build directory is not 'renewed'.
-            rm_path(Path(self.cov_db_dir))
+            # Don't do this if it isn't set (e.g. for Verilator).
+            if self.cov_db_dir != "":
+                rm_path(Path(self.cov_db_dir))
 
         return callback
 
@@ -775,7 +777,9 @@ class RunTest(Deploy):
             """Perform tidy up tasks."""
             if status != JobStatus.PASSED:
                 # Delete the coverage data if available.
-                rm_path(Path(self.cov_db_test_dir))
+                # Don't do this if it isn't set (e.g. for Verilator).
+                if self.cov_db_test_dir != "":
+                    rm_path(Path(self.cov_db_test_dir))
 
         return callback
 
