@@ -50,7 +50,7 @@ def run_cmd_with_timeout(
     if timeout:
         start = time.time()
         while time.time() - start < timeout:
-            if p.poll():
+            if p.poll() is not None:
                 break
 
             time.sleep(0.01)
@@ -58,7 +58,7 @@ def run_cmd_with_timeout(
         p.wait()
 
     # Capture output and status if cmd exited, else kill it
-    if p.poll():
+    if p.poll() is not None:
         result = p.communicate()[0]
         status = p.returncode
 
