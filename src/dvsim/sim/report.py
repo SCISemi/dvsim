@@ -167,7 +167,7 @@ class MarkdownReportRenderer:
     MAX_TESTS_PER_BUCKET = 5
     MAX_RESEEDS_PER_BUCKETED_TEST = 2
 
-    def __init__(self, html_link_base: Path | None = None, relative_to: Path | None = None) -> None:
+    def __init__(self, html_link_base: Path | None = None, relative_to: Path | None = None, summary_first : bool = False) -> None:
         """Construct a Markdown report renderer.
 
         Args:
@@ -178,6 +178,7 @@ class MarkdownReportRenderer:
         """
         self.html_link_base = html_link_base
         self.relative_to = relative_to if relative_to is not None else html_link_base
+        self.summary_first = summary_first
 
     def render(
         self,
@@ -193,7 +194,12 @@ class MarkdownReportRenderer:
             self.render_block(results=flow_result)["report.md"]
             for flow_result in flow_results.values()
         ]
-        report_md.append(self.render_summary(summary)["report.md"])
+
+        summary_md = self.render_summary(summary)["report.md"]
+        if self.summary_first:
+            report_md.insert(0, summary_md)
+        else:
+            report_md.append(summary_md)
 
         report = "\n".join(report_md)
         if outdir is not None:
@@ -468,7 +474,7 @@ def gen_reports(
         path: output directory path
 
     """
-    for renderer in (JsonReportRenderer(), HtmlReportRenderer()):
+    for renderer in (JsonReportRenderer(), HtmlReportRenderer(), MarkdownReportRenderer(summary_first=True)):
         renderer.render(
             summary=summary,
             flow_results=flow_results,
