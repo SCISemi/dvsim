@@ -391,7 +391,7 @@ class SynCfg(OneShotCfg):
             msgs_seen = 0
             fail_msgs = ""
             for _, key, fail in hdr_key_pairs:
-                if key in self.result["messages"]:
+                if "messages" in self.result and key in self.result["messages"]:
                     num_msgs = _getlen(self.result["messages"][key])
                     msgs_seen += num_msgs
                     self.errors_seen += num_msgs if fail else 0
