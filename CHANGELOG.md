@@ -2,6 +2,42 @@
 
 <!-- version list -->
 
+## v1.49.11 (2026-06-22)
+
+### Refactoring
+
+- Improve and document Testplan.get_stage_regressions
+  ([`2fd231e`](https://github.com/lowRISC/dvsim/commit/2fd231ee634a4b5364142e9066148498880b0049))
+
+
+## v1.49.10 (2026-06-22)
+
+### Bug Fixes
+
+- **dvsim**: Fix lint issues
+  ([`2f5870a`](https://github.com/lowRISC/dvsim/commit/2f5870ab6d9679317422c1912542d8ac3c79d1c5))
+
+- **dvsim**: Fix PR note
+  ([`2f5870a`](https://github.com/lowRISC/dvsim/commit/2f5870ab6d9679317422c1912542d8ac3c79d1c5))
+
+- **dvsim**: Slurm launcher quoting and process handling
+  ([`2f5870a`](https://github.com/lowRISC/dvsim/commit/2f5870ab6d9679317422c1912542d8ac3c79d1c5))
+
+
+## v1.49.9 (2026-06-04)
+
+### Bug Fixes
+
+- Allow testplans to have entries that are booleans
+  ([`d8a020e`](https://github.com/lowRISC/dvsim/commit/d8a020e33b175f605d58d7bf39983f1856bb2522))
+
+- Fix broken tp/cg filtering/update in testplan.py
+  ([`0931357`](https://github.com/lowRISC/dvsim/commit/093135798ba2ee5caf657c7785d49a9bf67567c2))
+
+- Improve error message when failing to parse a testplan
+  ([`c6ec8bb`](https://github.com/lowRISC/dvsim/commit/c6ec8bb535c51e62edc6c1cd6882c3c3e911ba8e))
+
+
 ## v1.49.8 (2026-06-02)
 
 ### Chores
