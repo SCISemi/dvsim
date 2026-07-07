@@ -33,56 +33,44 @@ class Xcelium:
             tuple of, List of metrics and values, and final coverage total
 
         """
+
         with cov_report_path.open() as buf:
-            for line in buf:
-                if "name" in line:
-                    # Strip the line and remove the unwanted "* Covered" string.
-                    metrics = line.strip().replace("* Covered", "").split()
-                    # Change first item to 'Score'.
-                    metrics[0] = "Score"
+            lines = [l.strip() for l in buf if l.strip()]
 
-                    # Gather the list of metrics.
-                    items: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-                    for metric in metrics:
-                        items[metric]["covered"] = 0
-                        items[metric]["total"] = 0
+        # Header is line 1 (after Legend)
+        metrics = re.split(r"\s{2,}", lines[1])
+        metrics = [m.replace("* Average", "") for m in metrics]
+        metrics[0] = "Score"
 
-                    # Next line is a separator.
-                    line = buf.readline()
+        # Find the DUT row
+        for line in lines[3:]:
+            if line.startswith("uvm_pkg"):
+                continue
 
-                    # Subsequent lines are coverage items to be aggregated.
-                    for line in buf:
-                        line = re.sub(r"%\s+\(", "%(", line)
-                        values = line.strip().split()
-                        for i, value in enumerate(values):
-                            value = value.strip()
-                            m = re.search(r"\((\d+)/(\d+).*\)", value)
-                            if m:
-                                items[metrics[i]]["covered"] += int(m.group(1))
-                                items[metrics[i]]["total"] += int(m.group(2))
-                                items["Score"]["covered"] += int(m.group(1))
-                                items["Score"]["total"] += int(m.group(2))
+            values = re.split(r"\s{2,}", line)
 
-                    # Capture the percentages and the aggregate.
-                    values = []
-                    cov_total = None
-                    for metric in items:
-                        if items[metric]["total"] == 0:
-                            values.append("-- %")
-                        else:
-                            value = items[metric]["covered"] / items[metric]["total"] * 100
-                            value = f"{round(value, 2):.2f} %"
-                            values.append(value)
-                            if metric == "Score":
-                                cov_total = value
-                    if cov_total is None:
-                        break
+            headers = ["Score"] + metrics[1:]
+            results = []
 
-                    return [list(items.keys()), values], cov_total
+            score = 0.0
+            count = 0
 
-        # If we reached here, then we were unable to extract the coverage.
-        msg = f"Coverage data not found in {buf.name}!"
-        raise RuntimeError(msg)
+            for value in values[1:]:
+                if value.lower() == "n/a":
+                    results.append("-- %")
+                    continue
+
+                pct = float(value.rstrip("%"))
+                results.append(f"{pct:.2f} %")
+
+                score += pct
+                count += 1
+
+            cov_total = f"{score / count:.2f} %" if count else "-- %"
+
+            return [headers, [cov_total] + results], cov_total
+
+        raise RuntimeError(f"Coverage data not found in {cov_report_path}")
 
     @staticmethod
     def get_job_runtime(_job: JobSpec, log_text: Sequence[str]) -> tuple[float, str]:
