@@ -31,6 +31,7 @@ import textwrap
 from importlib.metadata import version
 from pathlib import Path
 
+from dvsim.cli.config import print_config
 from dvsim.flow.factory import make_cfg
 from dvsim.instrumentation.factory import InstrumentationFactory
 from dvsim.instrumentation.runtime import set_instrumentation
@@ -868,12 +869,27 @@ def parse_args(argv: list[str] | None = None):
     )
 
     dvg.add_argument(
+        "--print-config",
+        nargs="?",
+        const="",
+        metavar="NAME",
+        help=(
+            "Print a resolved configuration value, or all configuration fields as JSON "
+            "when NAME is omitted, then exit without launching jobs. Use --items to "
+            "resolve build-dependent values and --select-cfgs to select a configuration."
+        ),
+    )
+
+    dvg.add_argument(
         "--fake",
         action="store_true",
         help=("Use a fake launcher that generates random results"),
     )
 
     args = parser.parse_args(argv) if argv else parser.parse_args()
+
+    if args.print_config is not None and args.remote:
+        parser.error("--print-config cannot be used with --remote")
 
     # Check conflicts
     # interactive and remote, r
@@ -890,6 +906,9 @@ def parse_args(argv: list[str] | None = None):
     # list all categories.
     if args.list == []:
         args.list = _LIST_CATEGORIES
+
+    if args.print_config is not None:
+        return args
 
     # Get max_parallel from environment if it wasn't specified on the command
     # line.
@@ -936,7 +955,8 @@ def main(argv: list[str] | None = None) -> None:
     configure_logging(
         verbose=args.verbose is not None,
         debug=args.verbose == "debug",
-        log_level=args.log_level,
+        log_level=args.log_level
+        or ("WARNING" if args.print_config is not None and args.verbose is None else None),
         log_file=args.log_file,
     )
 
@@ -952,7 +972,8 @@ def main(argv: list[str] | None = None) -> None:
     # Create an empty FUSESOC_IGNORE file in scratch_root. This ensures that
     # any fusesoc invocation from a job won't search within scratch_root for
     # core files.
-    (Path(args.scratch_root) / "FUSESOC_IGNORE").touch()
+    if args.print_config is None:
+        (Path(args.scratch_root) / "FUSESOC_IGNORE").touch()
 
     args.cfg = Path(args.cfg).resolve()
     if args.remote:
@@ -963,6 +984,14 @@ def main(argv: list[str] | None = None) -> None:
     curr_ts = datetime.datetime.now(datetime.timezone.utc)
     args.timestamp_long = curr_ts.strftime(TS_FORMAT_LONG)
     args.timestamp = curr_ts.strftime(TS_FORMAT)
+
+    if args.print_config is not None:
+        try:
+            print_config(make_cfg(args.cfg, args, proj_root), args.print_config)
+        except (ValueError, RuntimeError) as err:
+            log.error("%s", err)
+            sys.exit(1)
+        return
 
     # Register the seeds from command line with the RunTest class.
     RunTest.seeds = args.seeds
