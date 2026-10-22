@@ -158,7 +158,10 @@ class LocalRuntimeBackend(RuntimeBackend):
                 # We want the terminal to operate in raw mode to disable default line discipline.
                 # Save the old settings so that we can restore them afterwards.
                 stdin_fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(stdin_fd)
+                if os.isatty(stdin_fd):
+                    old_settings = termios.tcgetattr(stdin_fd)
+                else:
+                    old_settings = None
 
                 try:
                     tty.setraw(ptm)
@@ -197,7 +200,8 @@ class LocalRuntimeBackend(RuntimeBackend):
                     exit_code = proc.wait()
                 finally:
                     # Restore old terminal settings after all pending output is written (TCSADRAIN)
-                    termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_settings)
+                    if old_settings:
+                        termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_settings)
             except subprocess.SubprocessError as e:
                 log_file.close()
                 log.exception("Error launching job subprocess: %s", job.full_name)
