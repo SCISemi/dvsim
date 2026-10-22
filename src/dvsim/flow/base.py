@@ -11,6 +11,7 @@ import pprint
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
@@ -138,6 +139,21 @@ class FlowCfg(ABC):
         # add other default parameters that depend on the parameters above,
         # they can override _merge_hjson and add their parameters at the start
         # of that.
+        if getattr(args, "print_config", None) is not None:
+            self._config_keys = (
+                tuple(hjson_data)
+                + tuple(vars(args))
+                + (
+                    "scratch_root",
+                    "scratch_path",
+                    "scratch_base_path",
+                    "proj_root",
+                    "branch",
+                    "tool",
+                    "timestamp",
+                    "timestamp_long",
+                )
+            )
         self._merge_hjson(hjson_data)
 
         # Is this a primary config? If so, we need to load up all the child
@@ -223,6 +239,13 @@ class FlowCfg(ABC):
             self.ignored_wildcards,
             ignore_error=partial,
         )
+
+        # Preserve configuration data before subclasses convert modes, tests,
+        # and testplans into runtime objects. Only query invocations need this.
+        if hasattr(self, "_config_keys"):
+            self._config_values = deepcopy(
+                {key: self.__dict__[key] for key in self._config_keys if key in self.__dict__},
+            )
 
     def _post_init(self) -> None:
         # Run some post init checks
