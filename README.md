@@ -72,6 +72,74 @@ From there you can run the `dvsim` tool.
 
 For further information on how to use DVsim with OpenTitan see [Getting Started](https://opentitan.org/book/doc/getting_started/index.html)
 
+#### Querying configuration from external builds
+
+Use `--print-config NAME` to obtain a configuration value without launching build
+or simulation jobs. Strings and paths are printed directly; other values are
+pretty-printed as JSON with two-space indentation. Query mode suppresses routine
+informational logs by default; warnings and errors go to stderr and unsuccessful
+queries exit nonzero. Use
+`--verbose` or `--log-level` to request additional diagnostics.
+Put the configuration filename before the option, since its argument is optional.
+
+```sh
+dvsim path/to/config.hjson --print-config scratch_path
+dvsim path/to/config.hjson --tool xcelium -i smoke_test --print-config build_dir
+dvsim path/to/config.hjson --print-config
+```
+
+Without a name, the output is a JSON object containing loaded HJSON fields and
+configuration context such as `scratch_root`, `branch`, and command-line options.
+Imports, overrides and wildcard expansion follow the normal configuration loader.
+Runtime objects are excluded. Templates requiring build or run context remain in
+the full JSON output; a named query fails if its value remains unresolved.
+
+Query mode preserves the normal default item, `smoke`. For simulation builds,
+pass `--items` to select different tests or regressions and resolve their build
+modes, options and paths. Pass an empty `--items` option to inspect configuration
+without selecting a build (for example, `dvsim config.hjson --items --print-config`).
+Build context is resolved using the normal build preparation code, without
+executing jobs. One-shot flows such as superlint, synthesis and formal resolve
+all configured build modes using their normal build preparation code. Named
+queries require one configuration and one build; use
+`--select-cfgs` for primary configuration files. When multiple configurations or
+builds are selected, full JSON output is an array of records with `configuration`,
+optional `build_mode`, and `config` fields. Run-dependent values such as test seeds
+cannot be queried as resolved values.
+
+Configuration loading still initializes the scratch root and may evaluate
+configuration commands. Query mode does not deploy jobs, purge output directories,
+create a deployment dump or generate reports, and cannot be combined with `--remote`.
+With `--build-unique`, paths include the timestamp of the query invocation; a later
+invocation has its own timestamp.
+
+A standalone Makefile can query a path once when its caller has not supplied it:
+
+```make
+DVSIM_CFG ?= path/to/config.hjson
+
+ifndef SCRATCH_PATH
+SCRATCH_PATH := $(shell dvsim "$(DVSIM_CFG)" --print-config scratch_path)
+ifneq ($(.SHELLSTATUS),0)
+$(error Failed to query dvsim scratch_path)
+endif
+ifeq ($(strip $(SCRATCH_PATH)),)
+$(error dvsim scratch_path is empty)
+endif
+endif
+
+export SCRATCH_PATH
+```
+
+When dvsim invokes this Makefile, supply the path through the configuration's
+existing exports mechanism:
+
+```hjson
+exports: [
+  { SCRATCH_PATH: "{scratch_path}" }
+]
+```
+
 ## History
 
 DVSim development started in the main OpenTitan repository under `utils/dvsim`.
